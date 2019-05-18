@@ -1,0 +1,33 @@
+test_bits_from_sequence (test_holes_util.TestHolesUtil) ... ok
+test_combinations_count_1_small (test_holes_util.TestHolesUtil) ... ok
+test_combinations_count_2_large (test_holes_util.TestHolesUtil) ... ok
+test_combinations_count_bounds (test_holes_util.TestHolesUtil) ... ok
+test_dots (test_holes_util.TestHolesUtil) ... ok
+test_format_binary_default (test_holes_util.TestHolesUtil) ... ok
+test_format_binary_nondefault (test_holes_util.TestHolesUtil) ... ok
+test_rsplit_size_1 (test_holes_util.TestHolesUtil) ... ok
+test_rsplit_size_16 (test_holes_util.TestHolesUtil) ... ok
+test_rsplit_size_3 (test_holes_util.TestHolesUtil) ... ok
+test_rsplit_size_4 (test_holes_util.TestHolesUtil) ... ok
+test_rsplit_size_default (test_holes_util.TestHolesUtil) ... ok
+test_sequence_from_bits (test_holes_util.TestHolesUtil) ... ok
+test_best_combos (__main__.TestHolesBitwise) ... ok
+test_combos_with_n_dots_2_degenerate (__main__.TestHolesBitwise) ... ok
+test_combos_with_n_dots_3_tiny (__main__.TestHolesBitwise) ... ok
+test_combos_with_n_dots_4_small (__main__.TestHolesBitwise) ... ok
+test_combos_with_n_dots_5_medium (__main__.TestHolesBitwise) ... ok
+test_best_combos (__main__.TestHolesBitwiseNumpy) ... ok
+test_combos_with_n_dots_2_degenerate (__main__.TestHolesBitwiseNumpy) ... ok
+test_combos_with_n_dots_3_tiny (__main__.TestHolesBitwiseNumpy) ... ok
+test_combos_with_n_dots_4_small (__main__.TestHolesBitwiseNumpy) ... ok
+test_combos_with_n_dots_5_medium (__main__.TestHolesBitwiseNumpy) ... ok
+test_best_combos (__main__.TestHolesIterator) ... ok
+test_combos_with_n_dots_2_degenerate (__main__.TestHolesIterator) ... ok
+test_combos_with_n_dots_3_tiny (__main__.TestHolesIterator) ... ok
+test_combos_with_n_dots_4_small (__main__.TestHolesIterator) ... ok
+test_combos_with_n_dots_5_medium (__main__.TestHolesIterator) ... ok
+
+----------------------------------------------------------------------
+Ran 28 tests in 0.499s
+
+OK
