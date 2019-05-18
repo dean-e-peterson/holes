@@ -50,7 +50,7 @@ Because this project involves checking permutations, which grow factorially, it 
 With the help of the O'Reilly book _High Performance Python: Practical Performant Programming for Humans_, by Micha Gorelick and Ian Ozsvald, I improved the original performance significantly.  (I don't have exact numbers, or if I do, they are buried in log files of run completions.)  Here is a run for length 23:
 
 ```
-D:\src\holes> holey.py 23
+holey.py 23
 
             0         5        10        15        20        25
             | ' ' ' ' | ' ' ' ' | ' ' ' ' | ' ' ' ' | ' ' ' ' |
@@ -64,7 +64,7 @@ D:\src\holes> holey.py 23
 In the process of optimizing holey.py, I wrote multiple implementations, and instead of discarding them, I assigned them to command-line parameters so I could continue to compare them (and because I was too chicken to eliminate something that was working too soon.)  Here is the holey.py usage help.  Note that the best optimization requires a working installation of numpy:
 
 ```
- holey.py -h
+holey.py -h
 usage: holey.py [-h] [-b | -i | -o | -n] [-d] [--version] [-t] [-m MESSAGE]
                 length
 
@@ -86,6 +86,12 @@ optional arguments:
   -t          Show best combos for all lengths 1 thru given length.
   -m MESSAGE  Optional user message, unused but logged in logfile.
 ```
+
+## Miscellaneous notes
+
+`holey.py` creates log files in the same directory, or in a log subdirectory if one exists.
+
+See also doc directory, mainly for my unorganized thoughts, though.  I wouldn't expect anything too useful.
 
 ## Question for any mathematicians out there
 
