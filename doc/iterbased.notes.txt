@@ -1,0 +1,121 @@
+Notes and comments from holes/iterbased.py
+
+Once more, into the breach I go to try and reduce the number of
+long, multi-line comments in my source files.
+
+
+# HolesIterator.all_combos()
+#
+# Original comments, kept for my amusement:
+# {{{
+# ...distance + 2 because we can fit distance + 1 dots into a
+# length of distance because of including endpoints, then + 1
+# again because of how python's range() call works.
+# But wait! you say, you're starting the range at 0,
+# and 0 through distance + 1 inclusive is distance + 2,
+# you diabolical double dipper!  You are right, but I start
+# the range at 0 anyway to allow someone to specify 0 dots,
+# which is not the same case as having 1 dot at position 0.
+# Why no, I don't drink, why do you ask? (Sigh)
+# }}}
+
+
+holes/iterbased.py, all_combos()
+Example of a "powerset" from some numpy docs.
+Perhaps the real name for all_combos with any number of dots
+is the "powerset"?
+# def powerset(iterable):  # {{{
+## From numpy doc or cookbook or some such...
+## "powerset([1,2,3]) -->() (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
+#    s=list(iterable)
+#    return chain.from_iterable(
+#    combinations(s,r) for r in range(len(s)+1))
+# }}}
+
+
+holes/iterbased.py, combos_with_n_dots()
+Kind of ugly attempt at optimization that foundered on
+not being sure I could accurately calculate counts anyway
+given the possibility pipeline closing early.
+Alternate optimization is just to comment out logging
+and not try to replace it's counts with calculation.
+    def combos_with_n_dots(self, distance, dotcount): # {{{
+        def completion_logging_dummy_generator(label): #  {{{
+            # See optimization comments in main method body.
+
+            try:
+                # Fool python into making this a generator at all.
+                if False: yield
+
+                # Only calculate calc if it apparently finished.
+                #count = combos_with_n_dots_count(distance, dotcount)
+            finally:
+                # Updating self.stats like log_progress may not be
+                # worth it.  elapsed is unknown, and count cannot
+                # be calculated accurately because we do not know if 
+                # the generator pipeline closed before the 
+                # combos_with_n_dots iterator finished.
+                logger.debug('{:>25}  done'.format(label))
+                return
+                # }}}
+
+        if distance < 0: raise ValueError()
+        if dotcount < 0: raise ValueError()
+        if dotcount > distance + 1:
+            raise ValueError('dotcount must be <= distance + 1, ' +
+                             'even including both endpoints.')
+        combos = combinations(range(distance + 1), dotcount)
+
+
+        # Optimization notes {{{
+        # ...from...
+        # combos = self.log_progress(
+        #     combos,
+        #     'combos_with_n_dots({}, {})'.format(distance, dotcount),
+        #     step=None)
+        # Slow, since log_progress consumed and re-yielded each combo.
+        # ...to...
+        # Instead, we use itertools.chain to tack an iterator just
+        # at the end of the combos, not above consuming them.
+        # Since this marker iterator is only for logging, it should
+        # actually yield no items before raising StopIteration.
+        # We don't want it producing.
+        # All we are after is the side-effect of this fake
+        # generator being called at the appropriate time.
+        #}}}
+        label='combos_with_n_dots({}, {})'.format(distance, dotcount)
+        dummy_gen = completion_logging_dummy_generator(label)
+        combos = chain(combos, dummy_gen)
+
+        return combos
+
+        # }}}
+
+holes/iterbased.py, combos_with_n_dots()
+Cleaner, less ambitious attempt at optimization.
+Not sure it made any speed difference, though.
+It's time cost, if ANY, may have been similar to
+normal log_progress in testing holey.py -d 29 ??
+So, nothing bad, but not a clear win.
+Also, didn't log uncompleted combo_with_n_dots at end.
+
+    def combos_with_n_dots(self, distance, dotcount, offset=0): # {{{
+
+        def log_completion(label):
+            # Fake generator to stick after combinations with chain.
+            if False: yield
+            logger.debug('{:>25}  done'.format(label))
+            return
+...
+        label = 'combos_with_n_dots({}, {})'.format(distance,dotcount)
+        # Slower since log_progress consumes and re-yields each combo.
+        #combos = self.log_progress(
+        #    combos,
+        #    label,
+        #    step=None)
+        # Faster?  Sticks a fake generator on the end which runs only
+        # once, yields no items, but logs completion as a side effect.
+        combos = chain(combos, log_completion(label))
+...
+        # }}}
+

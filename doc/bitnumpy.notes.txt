@@ -1,0 +1,50 @@
+Notes and comments on holes/bitnumpy.py
+
+Not bad.
+from holes/bitbased.py, bit_combos_that_measure(),
+    Specifically, one where chunking is done by numpy itself
+    using np.fromiter( ... count).  It seems to work fine,
+    but seems kind of ugly to deal with 0 as a magic filler value.
+    On the other hand, it might be tighter code than the
+    bit_combos_that_measure() AND bit_combos_measure_np()
+    would replace.
+    I noticed no great speed advantage, if any, so removing for now.
+
+    def bit_combos_that_measure(self, combo_iter, distance):
+        # Ensure numpy sees last item as part of a full chunk.
+        # Caution: Two implications...
+        #   1. There should not be 0's in the actual input data.
+        #    ##(Currently ensured by best_bit_combos()..._with_ends())
+        #   2. This function must evaluate the false 0's to false.
+        chunksize = 4096
+        spacings = np.array(range(1, distance + 1), dtype=np.int_)
+        spacings.shape = (1, len(spacings))
+        combo_iter = itertools.chain(combo_iter,
+                                     itertools.repeat(0, chunksize))
+        while True:
+            try:
+                combos = np.fromiter(combo_iter, np.int_, chunksize)
+            except ValueError:
+                if err.args[0] == 'iterator too short':  # Brittle?
+                    # will have already broken at end of previous
+                    # iteration...unless things aligned such that
+                    # the last item of input data was also the last 
+                    # item of the last chunk.
+                    break
+                else:
+                    raise
+
+            combos.shape = (len(combos), 1)
+            combos_measure_matrix = (combos & (combos>>spacings)) != 0
+            combos_measure = combos_measure_matrix.all(axis=1)
+            combos.shape = (len(combos))
+            combos_which_measure = combos[combos_measure]
+
+            for combo in combos_which_measure:
+                yield combo
+
+            if combos[chunksize - 1] == 0:
+                # This was the last chunk.
+                break
+        return
+

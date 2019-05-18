@@ -1,0 +1,129 @@
+Notes on possible optimizations for the holes (/dots/etc) package.
+This is here largely to get comments out of the middle of the code.
+
+
+4/30/2016
+
+holes/_util.py, @logfunc() decorator.
+    # {{{
+    # Potential performance optimization:
+    # Could first check that the log level is low enough
+    # that our logging will actually happen, and only
+    # log or format and log stuff if so? For example:
+    # do_logging = logger.isEnabledFor(logging.DEBUG)
+    #
+    # Another potential performance optimization:
+    # Break down and use old % style formatting, deferred to
+    # logger formatting time, possibly with QueueHandler?
+    # }}}
+
+holes/iterbased.py, distances_covered()
+Alternative implementation notes  {{{
+    # An alternate way based on how numpy arrays are "broadcast"
+    # out from any dimension length 1 to allow operations with arrays
+    # of non-matching shapes.  For example:
+    #     If  ax is a 1x5 array [[0, 1, 4]], and
+    #     and ay is a 5x1 array [[0],
+    #                            [1],
+    #                            [4]]
+    #     then if you subtracted ax - ay, numpy would extend
+    #     (broadcast) them both to 5x5 arrays to match such that
+    #                      [[0],
+    #       [[0, 1, 4]]  -  [1],   is like
+    #                       [4]]
+    #
+    #       [[0, 1, 4],     [[0, 0, 0],       [[ 0,  1,  4],
+    #        [0, 1, 4],  -   [1, 1, 1],   =    [-1,  0,  3],
+    #        [0, 1, 4]]      [4, 4, 4]]        [-4, -3,  0]]
+    #
+    # Would this be faster, either alone or in conjunction with the
+    # possibility for checking if each length is there with the 'in'
+    # operator?  I don't know.  Hints:
+    #
+    #     import numpy as np
+    #     a = (0,1,4)
+    #     ax = np.array(a, dtype=np.int_, ndmin=2)
+    #     ay = np.array(a, dtype=np.int_)
+    #     ay.shape = (len(a), 1)
+    #     ax - ay
+    #
+    # Anyway, back to our regularly scheduled program. }}}
+
+holes/iterbased.py, distances_covered(), pair_distances()
+Original implementation using numpy's reshaping.
+def distances_covered_orig(points):  # {{{
+    """
+    Returns a list of the distances spanned by pairs of given points
+    Returned set has duplicates removed.
+    """
+    distance_table = pair_distances(points)
+
+    # Reshape the 2-d table to a 1-d array.  The -1 tells reshape to
+    # pick the size of the last (and in this case, only) dimension
+    # to whatever will make the reshaped arrays elements all fit.
+    distance_array = distance_table.reshape(-1)
+
+    # Convert to a set to make unique (could also make unique list?)
+    distance_set = set(distance_array)
+    if 0 in distance_set:
+        distance_set.remove(0)
+
+    return distance_set
+    # }}}
+def pair_distances(points):  # {{{
+    """
+    Matrix actually sparse, sort-of.  For ease of indexing,
+    each array dimension will be big enough to hold all
+    integers 0 through to the highest of the points...
+    EVEN if there actually holes in the series of points.
+    I could try using the np.float_ type and NaN,
+    or (scipy?) masked or sparse arrays, or just nested
+    normal python sequences so I could use None.
+    HOWEVER, for the moment, I will leave invalid matrix
+    entries set to 0 ... the same as the distance between
+    a valid point and itself (sigh).
+    """
+    if len(points) > 0:
+        upper_bound = max(points) + 1
+    else:
+        upper_bound = 0
+    distances = np.zeros(shape=(upper_bound, upper_bound),
+                         dtype=np.int_)
+    for i in points:
+        for j in points:
+            distances[i,j] = abs(j-i)
+    return distances
+    # }}}
+
+
+5/4/2016
+
+After commending out logging and adding spans n-1 optimization,
+the class-based iterator implementation nearly matches the speed
+of the old function-based iterator implementation.
+
+$ for i in {1..8}; do (time ./holey.py -o 23) 2>&1 | grep real; done
+real    0m2.556s
+real    0m1.722s
+real    0m1.734s
+real    0m2.584s
+real    0m2.574s
+real    0m2.578s
+real    0m1.740s
+real    0m2.548s
+$ for i in {1..8}; do (time ./holey.py -i 23) 2>&1 | grep real; done
+real    0m1.845s
+real    0m1.835s
+real    0m1.838s
+real    0m2.780s
+real    0m1.848s
+real    0m2.803s
+real    0m1.856s
+real    0m1.853s
+[lethargo@namib holes]$
+
+After adding inner combos/combos spanning optimization,
+new class implementation finally bet non-class.
+
+./holey.py -r 2 -d 29 seems to run in about 35 sec, sometimes 25.
+

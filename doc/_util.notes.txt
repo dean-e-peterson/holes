@@ -1,0 +1,120 @@
+Comments from and notes on holes/_util.py
+holes/_util.py, hg keywords and __version__
+# Hg version control keyword expansion comments: {{{
+# If the following version stuff works, I hope to have
+# performance tests recorded across script revisions,
+# using the following to allow retrieval of the exact
+# source code that produced the results.
+#
+# I'm using the (not recommended) hg keyword extension.
+# In my .hgrc I defined a keywordmap DPTag like so...
+# DPTag = {latesttag}.{latesttagdistance}:{node|short}
+# Hg version control replaces DPTag with something like
+#   DPTag: 0.1.23:a1b1c1d2e2f ,
+# where... 0.1 is the tag I assigned with hg tag 0.1,
+#           23 is hg # of checkins since that tag or something, and
+# a1b1c1d2e2f2 is the short form hg changeset id, which I think
+#              should let me get the exact source code back.
+
+_hg_keyword = '$DPTag$'
+__version__ = _hg_keyword[8:-2]
+__author__ = 'lethargo'
+# }}}
+
+
+holes/_util.py, printlog()
+Rationale for creating a printlog function instead of
+running normal output through the logging infrastructure.
+    Note: {{{
+    Instead of combining printing and logging like this,
+    you could always make logging calls instead of print calls
+    in your code, and configure the logger with two handlers,
+    one to log to file, and one (StreamHandler?) to log to
+    console outout.  You could even set the handlers to
+    different log level thresholds so that one handler would
+    only output more important stuff.
+    However,
+    using the logging infrastructure for normal output could
+    hurt maintainability by being more opaque and surprising.
+    Also, to me, normal output didn't fit cleanly in their
+    standard log level scheme (DEBUG, INFO, WARNING, etc.),
+    especially if I normally wanted to output data to console
+    (not WARNING, so INFO?), and log that output plus more,
+    even before kicking in some debug or verbose logging.
+    So I would need to add at least one custom log level
+    between DEBUG and INFO.  This should be pretty easy,
+    but the python docs recommend against libraries defining
+    their own levels, so do I want to get in that habit?
+    I concluded that seemed clearer to write a small function
+    that explicitly showed what I wanted, that is,
+    I want to print something ... and log it.
+    On the other hand,
+    perhaps it would be cleaner to use the logging infrastructure,
+    but using normal print function printing to a stream split
+    to go to both STDOUT and to the loggin infrastructure? }}}
+
+holes/_util.py, rulers(), ruler()
+Saving off prior ruler implementations.
+# {{{
+ruler() returned a one two-line string (numbers and tick marks),
+which made it ugly to log since the second line would not
+have the prior fields in the log.  It was also hard to add
+additional left padding.
+rulers() rather confusingly returned two one-line strings, in a
+tuple.  This allowed separate use and logging of each line,
+but offered little over two separate functions, one to return
+the line of tick marks, and one to return the line of numbers.
+
+def rulers(length, left_padding=0):
+    """
+    Returns ruler strings for use as a header when displaying points
+    separated by a single space.  length for the ruler should be the
+    length in (space-separated) points, not screen characters.  The
+    resulting ruler covers multiples of 5 points, the ruler function
+    will round your length up to the next multiple of 5.
+    Note: Ruturns a tuple of strings, not a single string,
+          so that each line of the ruler (numbers and tick marks)
+          can be printed and logged separately.  This can help when
+          logging a single multi-line ruler string with \n messes up
+          the look of the log by preventing the logger from prefixing
+          each line of the log file with common stuff.
+    """
+    # How many sections of 5?
+    # Use // to chop off remainder, and
+    # use +4 to show a final set of 5 if length not a multiple of 5.
+    fives = (length + 4) // 5
+    # Or could have done math.ceil(length / 5)
+
+    # Format number labels,
+    # using :3d to make all at least 2 wide, and
+    # using * in the format call to unbundle the range call;
+    # length needs +4 like above, +1 more since range counts from 0.
+    number_fmt = "{:2d}" + ("        {:2d}" * fives)
+    ruler_numbers = number_fmt.format( *range(0, length + 4 + 1, 5))
+    ruler_numbers = (" " * left_padding) + ruler_numbers
+
+    # Make a nice line of tick marks (ooo, pretty...)
+    ruler_ticks = " |" + (" ' ' ' ' |" * fives)
+    ruler_ticks = (" " * left_padding) + ruler_ticks
+
+    # Return the two lines separately as a tuple.
+    return ruler_numbers, ruler_ticks
+
+def ruler(length=30, left_padding=0):
+    """ Old-style ruler function returning one multi-line string."""
+    ruler_numbers, ruler_ticks = rulers(length, left_padding)
+    ruler  = ""
+    ruler += ruler_numbers
+    ruler += "\n"
+    ruler += ruler_ticks
+    ruler += "\n"
+    return ruler
+
+holes/_util.py, print_combos()
+Saving off old lines that called the old rulers.
+Can delete these 6/1/2016.
+            #print(ruler(length=max(c), left_padding=12))
+            #(numbers, ticks) = rulers(length=max(c), left_padding=12)
+            #print(numbers)
+            #print(ticks)  # }}}
+

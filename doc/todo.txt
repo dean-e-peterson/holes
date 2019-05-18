@@ -1,0 +1,9 @@
+holes.py to do list
+See also TODO's in-place in source files.
+
+# TODO: Determine if this is best way to make a python 3 executable.
+# TODO: Determine the best way to say this requires at least python 3.x?
+# TODO: Determine which of my .py files actually need to be run
+#       as separate command line commands, instead of with python3 -m
+#       (if at all).  For those that do not need to be run that way,
+#       remove the #! line and also chmod -x

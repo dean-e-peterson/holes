@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>pytips</title>
+  <meta charset="utf-8">
+  <style type="text/css">
+    body { background-color: #eedece; }
+  </style>
+</head>
+<body>
+<article>
+
+<h1>Pytips</h1>
+
+<section>
+<h2>Ipython</h2>
+<dif4/6/2016
+
+<p>This tells IPython that you want to explicitly type the % before
+its auto magic % commands.  I don't know where the config goes.</p>
+
+<pre>
+c = get_config()
+c.MagicsManager.auto_magic = False
+</pre>
+</section>
+
+<section>
+<h2>Profiling</h2>
+<h3>cProfile</h3>
+<pre>
+
+4/10/2016
+
+import cProfile
+import holes
+cProfile.run('holes.best_combos(17)', sort='time')
+import pstats
+cProfile.run('holes.best_combos(17)', 'filename17')
+pstats.Stats('filename17').sort_stats('time').print_stats(5)
+pstats.Stats('filename17').sort_stats('cumtime').print_stats(5)
+
+$ python3 -m cProfile -s time holes.py
+$ python3 -m cProfile -o h17.prof holes.py 17
+$ python3 -m pstats h17.prof
+Welcome to the profile statistics browser.
+h17.prof% sort time
+h17.prof% stats 5
+Sun Apr 10 15:31:53 2016    h17.prof
+
+         23041104 function calls (23038630 primitive calls) in 11.385 seconds
+
+   Ordered by: internal time
+   List reduced from 629 to 5 due to restriction &lt;5&gt;
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+   131071    7.228    0.000   10.120    0.000 holes.py:33(distances_covered)
+ 11141130    1.625    0.000    1.625    0.000 {method 'add' of 'set' objects}
+ 11141201    1.267    0.000    1.267    0.000 {built-in method abs}
+   131071    0.492    0.000   10.723    0.000 holes.py:113(combo_measures)
+   131224    0.309    0.000    0.309    0.000 holes.py:85(&lt;genexpr&gt;)
+
+h17.prof% quit
+
+# ipython + profiling
+In [14]: %timeit -r1 -n1  print(len( holesiter.best_combos(24)[0] ))
+9
+1 loops, best of 1: 13.3 s per loop
+
+In [15]: %timeit -r1 -n1  cProfile.run('print(len( holesiter.best_combos(24)[0] ))', 'bc24.iter.prof')
+9
+1 loops, best of 1: 21.7 s per loop
+
+In [18]: p = pstats.Stats('bc24.iter.prof')
+In [19]: p.sort_stats('time')
+In [20]: p.print_stats(5)
+...
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+   390665   11.692    0.000   14.421    0.000 ./holesiter.py:35(distances_covered)
+   390674    2.996    0.000    2.996    0.000 ./holesiter.py:96(&lt;genexpr&gt;)
+ 12511325    2.729    0.000    2.729    0.000 {method 'add' of 'set' objects}
+   390665    2.720    0.000   17.961    0.000 ./holesiter.py:124(combo_measures)
+   390665    0.723    0.000    0.723    0.000 {method 'difference' of 'set' objects}
+
+PS from 5/10/2016: Don't know if this is a good idea, but...
+
+$ python3 -m timeit -n 1 -r 10 -s 'import holes' 'h = holes.bitbased.HolesBitwise(); h.do_run(23)'
+1 loops, best of 10: 774 msec per loop
+
+</pre>
+
+<h3>kernprof line_profiler usage</h3>
+<pre>
+
+5/3/2016
+
+Earlier I ...
+- Installed fedora python3-pip
+- python3-pip installed line_profiler
+
+Now I...
+- Added @profile as a decorator to the function of interest.
+    $ kernprof -l -v ./holey.py 23
+- Can view later IF HAVE UNCHANGED SOURCE CODE.
+    $ python3 -m line_profiler holey.py.lprof
+- So if you are OK saving script output, too, maybe something like...
+    $ kernprof -l -v ./holey.py 23  2&gt;&amp;1 | tee -a holey.lprof.txt
+
+WARNING: Tried viewing line profiler output later after removing
+@profile directive line, and all lines were off by one.
+
+
+Conclusion:
+
+    For safety, when using kernprof line profiler,
+    save off TEXT version of profile output, because
+    the .lprof file seems to depend on unchanged source file.
+
+    For example:
+    kernprof -l -v -o temp.lprof holey.py -d 13  &amp;&amp;  python3 -m line_profiler temp.lprof &gt;&gt; misc/holey.lengths_covered.13.lprof.txt
+
+
+Anyway, using line_profiler, I looked at lengths_covered(),
+but saw nothing very helpful.
+
+    Timer unit: 1e-06 s
+    Total time: 15.4713 s
+    File: ./holes/iterbased.py
+    Function: lengths_covered at line 136
+    Line #      Hits         Time  Per Hit   % Time  Line Contents
+    ==============================================================
+       136                                               @profile
+       137                                               def lengths_covered(self, combo):
+    ...
+       143    110132       175660      1.6      1.1          length_set = set()
+       144    944640       727954      0.8      4.7          for i in combo:
+       145   7212000      5577444      0.8     36.1              for j in combo:
+    ...
+       154   6377492      5947286      0.9     38.4                  if (j-i) &gt; 0:
+       155   2771492      2956048      1.1     19.1                      length_set.add(j-i)
+    ...
+       160    110132        86908      0.8      0.6          return length_set
+
+
+I also tried a small change in log_progress(), but no benefit.
+
+        for count, item in enumerate(iterable, start=1):
+            if step and count % step == 0:
+                log_count()
+            yield item
+
+...tried to remove the test for having a step...
+
+        for count, item in enumerate(iterable, start=1):
+            #if step and count % step == 0:
+            if count % step == 0:
+                log_count()
+            yield item
+
+Here is the original code line profiled...
+
+    Line # Hits %Time Line Contents
+    =====================================
+    ...
+    80  2654565  43.4 for count, item in enumerate(iterable, start=1):
+    81  2654555  30.2     if step and count % step == 0:
+    82                        log_count()
+    83  2654555  26.4     yield item
+    ...
+
+...and here is with my change, still around 30% time for that line...
+
+    Line # Hits %Time Line Contents
+    =====================================
+    ...
+    80  2654565  43.7 for count, item in enumerate(iterable, start=1):
+    81                    #if step and count % step == 0:
+    82  2654555  30.1     if count % step == 0:
+    83                        log_count()
+    84  2654555  26.1     yield item
+    ...
+
+Summary:
+    Pointless removing "step and" from "if step and count % step == 0"
+
+</pre>
+
+
+
+</section>
+<section>
+
+<h2>Numpy broadcasting example</h2>
+<pre>
+np.lookfor('along axis') # Useful help call
+
+import numpy as np
+a = (0,1,4)
+ax = np.array(a, dtype=np.int_, ndmin=2)
+ax.shape
+#[Out]# (1, 3)
+ax
+#[Out]# array([[0, 1, 4]])
+ay = np.array(a, dtype=np.int_)
+ay.shape
+#[Out]# (3,)
+ay.shape = (len(a), 1)
+ay.shape
+#[Out]# (3, 1)
+ay
+#[Out]# array([[0],
+#[Out]#        [1],
+#[Out]#        [4]])
+ax - ay
+#[Out]# array([[ 0,  1,  4],
+#[Out]#        [-1,  0,  3],
+#[Out]#        [-4, -3,  0]])
+get_ipython().magic('logstop')
+
+</pre>
+
+</section>
+<section>
+<h2>Logging</h2>
+
+<h3>Logging Levels</h3>
+<pre>
+
+5/18/2016
+
+There are two components with levels, Loggers and LogHandlers.
+
+https://docs.python.org/3/howto/logging.html#logging-flow
+
+Loggers:
+- Have a level setting
+- If level is NOTSET, get their effective level from parent logger
+- Have zero or more LogHandlers
+- Pass messages to handlers if message level &gt;= logger level
+- Also pass log messages to their parent logger, REGARDLESS of level
+  - (controlled by propagate attribute, not level)
+- There one unique root logger at the top of the chain, which always
+  has a level, and is the source of effective level as a last resort
+
+LogHandlers:
+- Have a level setting
+- If level is NOTSET (the default), handles all the messages it gets
+- If level is set, handles messages if message level &gt;= handler level
+- Can be the NullHandler, which always does nothing, and is
+  recommended for libraries so applications can configure handlers
+
+Note the different meanings of level NOTSET:
+For Loggers, it means ask your parent for the level.
+For LogHandlers, it means handle all messages, of any message level.
+
+
+*** logging - note on root logger
+root logger versus logging.getLogger('root')
+
+The root logger, which logs itself formatted as the string
+"root", and which I think can be obtained with any of...
+    logging.getLogger(None)
+    logging.getLogger()
+    logging.getLogger('')
+... but is NOT THE SAME as a logger you explicitly name "root".
+So, I believe the following does NOT get the true root logger...
+    logging.getLogger('root')
+... despite the fact that the true root logger logs as "root".
+
+TODO: File python issue suggesting a warning about this in docs
+where it says that the root logger logs itself formatted with
+the string "root".
+</pre>
+
+
+<h3>String formatting &amp; logging</h3>
+<pre>
+4/16/2016
+
+Question:
+
+In python 3.3, which style of string formatting should I use?
+- new-style - str.format(), 'show {} and {}'.format(a, b)
+- old-style - % operator,   'show %s and %s' % (a, b)
+- string.Template class
+- f-strings - formatted string literals, f'show {a} and {b}'
+
+CONCLUSION:
+- Use new-style, str.format() for general string formatting.
+- Use new-style, str.format() for normal logging by
+  just calling str.format() myself before giving to logging.
+- Use old-style %s operator for performance-critical logging,
+  since it's the only simple, maintainable way to defer
+  formatting until logger decides if the message really
+  should be logged (e.g. DEBUG messages when log level lower)
+  Note: See discussion for why Formatter "style" doesn't help.
+  Note: This consideration made it a near-run thing for me.
+        I almost decided to stay with %s for all str formatting,
+        but the new f-string literals will use syntax like
+        str.format(), not the old-style % operator syntax.
+- Starting in python 3.6,
+  Use the even newer f-string literals in place of str.format()
+
+Discussion:
+
+- string.Template class
+  - I know little about it.
+  - I kind of get the idea that it is an also-ran in the community?
+  - Looks syntactically verbose to me.
+  - No reason for me to pick it at least.
+
+- old-style - % operator
+  - Was standard for python 2.
+  - I THOUGHT it was going away for python 3...
+    - Python 3.1 docs:
+      - https://docs.python.org/3.1/library/stdtypes.html#old-string-formatting
+          Note: The formatting operations described here are obsolete
+          and may go away in future versions of Python. Use the new
+          String Formatting in new code.
+      - https://docs.python.org/3.1/tutorial/inputoutput.html#old-string-formatting
+          ...this old style of formatting will eventually be removed
+          from the language, str.format() should generally be used.
+    - Could the addition of PEP-498 f-strings in 3.6 eventually
+      replace old-style % formatting?
+  - BUT maybe the old-style % operator is here to stay.
+    - GOOD link from python-dev mailing list:
+        http://python.6.x6.nabble.com/Status-regarding-Old-vs-Advanced-String-Formating-td4503327.html
+    - Someone said it's good having something familar to C printf users.
+    - Python 3.3 docs:
+      - https://docs.python.org/3.3/library/stdtypes.html#old-string-formatting
+          Note: The formatting operations described here exhibit
+          a variety of quirks ... Using the newer str.format()
+          interface helps avoid these errors...
+      - https://docs.python.org/3.3/tutorial/inputoutput.html#old-string-formatting
+          [ removal paragraph has been removed ]
+    - LOGGING MODULE in standard lib requires old-style % format, and
+      apparently it will require it indefinately.
+          https://docs.python.org/3.5/howto/logging-cookbook.html#formatting-styles
+      - DESPITE new "style" keyword, which applies to the
+        infrequent code that sets the ultimate message format
+        in the Formatter object, but...
+      - The new "style" keyword does NOT apply to the frequent code
+        where you actually log stuff, like debug() and info() calls.
+        You still have to use old-style % formatting there,
+            logger.info('Log %s and %s' % (a, b))
+        unless you...
+        - either do this custom stuff, confusing to maintainers:
+            https://docs.python.org/3.5/howto/logging-cookbook.html#using-custom-message-objects
+        - or you just format your strings yourself before logging, as
+              logger.info('Log {} and {}'.format(a, b))
+          but then you lose what I THINK is a performance benefit
+          of letting the logging module do the formatting, namely,
+          I think the logging module defers the formatting until
+          it is time to emit the message somewhere, which means
+          if it is a DEBUG message and the log level is set to
+          ignore DEBUG messages, then it never does that
+          formatting at all, whereas if you formatted the string
+          yourself, you incur that cost even if the message is
+          subsequently ignored.
+
+- new-style - str.format(), 'show {} and {}'.format(a, b)
+  - I'm too tired to keep going, and not much to say here
+    that won't be in conclusion.
+
+- f-strings - formatted string literals, f'show {a} and {b}'
+  - Not yet.  Slated for inclusion starting python 3.6.
+  - PEP 498:
+      https://www.python.org/dev/peps/pep-0498/
+  - Another, new string formatting method, oh no.  BUT...
+  - based on the new-style str.format stuff (whew!), and...
+  - it actually looks pretty clear and handy (hmm)
+  - Python 3.6 docs (pre-release as of this writing) on it:
+      https://docs.python.org/3.6/reference/lexical_analysis.html#f-strings
+</pre>
+
+
+<h3>Logging practical notes</h3>
+<pre>
+4/17/2016
+Example first good logging attempt:
+
+import logging
+logger = logging.getLogger(__name__)
+if __name__ == '__main__':
+    ...
+    # Configure Logging.  Done after parsing the command line
+    # to avoid creating a 0 byte file when user passes invalid args.
+    logging.basicConfig(
+        filename=log_filename(),
+        level=logging.INFO,
+        format='%(levelname)s: %(message)s'
+        )
+    # Log start time, scriptname, and command line arguments.
+    logger.info('-' * 30)
+    start_msg = 'Run started - {} - {}'.format(
+        time.strftime(__HOLEY_TIME_FORMAT),
+        str(sys.argv))
+    logger.info(start_msg)
+
+Example results from different logging format strings:
+
+    """
+    logging.info('Run started - ' + str(sys.argv))
+    ...with the following log formats created the following log entries...
+
+    (Format not specified, that is, the default format)
+    INFO:root:Run started - ['./holes.py', '2']
+
+    format='%(levelname)s:%(name)s:%(message)s'
+    INFO:root:Run started - ['./holes.py', '2']
+
+    format='%(levelname)s: %(message)s'
+    INFO: Run started - ['./holes.py', '2']
+
+    format='%(asctime)s:%(levelname)s:%(name)s:%(message)s'
+    2016-04-15 23:43:33,759:INFO:root:Run started - ['./holes.py', '2']
+
+    format='%(relativeCreated)d:%(levelname)s:%(filename)s:%(funcName)s:%(lineno)d:%(message)s'
+    1:INFO:holes.py:&lt;module&gt;:514:Run started - ['./holes.py', '2']
+
+    I didn't try datefmt= argument along with format= yet.
+    """
+</pre>
+
+
+<h3>Logging milliseconds</h3>
+<pre>
+4/21/2016
+Logging milliseconds, and then making it format with period, not comma.
+
+
+Easy way:
+
+    # Well nuts, format can contain %(msecs)d, huh?
+    # Maybe I COULD have logged milliseconds with a period, and
+    # avoided messing with the Formatter object or giving up datefmt.
+    # For example:
+    #    format='%(asctime)s.%(msecs)03d :%(levelname)s: %(message)s',
+    #    datefmt='%Y/%m/%d %H:%M:%S'
+
+def configure_logging():
+    logging.basicConfig(
+        filename=log_filename(),
+        level=logging.INFO,
+        format='%(asctime)s.%(msecs)03d :%(levelname)s: %(message)s',
+        datefmt='%Y/%m/%d %H:%M:%S'
+        )
+        # Note: datefmt determines format of %(asctime)s in the
+        # overall format string, then .%(msecs)03d adds milliseconds.
+        # Links to a couple useful pages in the python 3.5.1 docs.
+        # The second is more for background.
+        # docs.python.org/3/library/logging.html#logrecord-attributes
+        # docs.python.org/3/library/logging.html#logging.Formatter.formatTime
+
+    return
+
+
+
+Hard way: ... guess which way I worked out first :-/
+
+Yes, this is a lot of stuff to do with that.  See especially ** 'ed below.
+
+    tip:  When accessing this stuff at runtime (not sure if you are
+          supposed to, you might have to traverse up to parent at
+          least once if not on true root logger.
+          Example (note the .parent.):
+              logger.parent.handlers[0].formatter.default_msec_format
+    fun
+    fact: logging.getLogger('root') seems to return a working
+          logger, but it appears not to be the true RootLogger,
+          a different class type, which logging.getLogger('')
+          or logging.getLogger() return.
+
+# The following is meant for use from __main__,
+# not when this is used as a module.
+def configure_logging():
+    logging.basicConfig(
+        filename=log_filename(),
+        level=logging.INFO,
+        format='%(asctime)s :%(levelname)s: %(message)s'
+        )
+    # I did NOT set datefmt= in basicConfig for two reasons:
+    # 1. Because the default, most of ISO 8601, format is OK.
+    # 2. Because if we set datefmt to anything but None,
+    #    then logging.Formatter().formatTime() would not
+    #    try to append the milliseconds, because the strftime
+    #    formats do not include a format string for milliseconds.
+    # Therefore, datefmt is not set.
+    #
+    # However, the default way is to append milliseconds
+    # after a comma (e.g. 10:59:05,123),  BUT, I'm fussy
+    # and I want a decimal point not a comma, THEREFORE.
+    #
+    # Below I also get access to the Formatter object,
+    #
+    # (The right way to do that might be to create a Handler, create
+    # and attach my modified Formatter to the Handler, and only then
+    # call basicConfig, passing it my already-created Handler??  Doing
+    # that but overriding the Formatter class to change the
+    # formatTime() method might even let me get microseconds.)
+    #
+    # Anyway, I get access to the Formatter object, and override the
+    # millesecond format string to use a decimal point.  The %s part
+    # of the millesecond format string is the entire rest of the
+    # date/time, already formatted with the default strftime style.
+    #
+    # I'm including a bit of the python 3.5.1 logging.Formatter()
+    # docs because it was important to finally getting this working.
+    #
+ ** # docs.python.org/3/library/logging.html#logging.Formatter.formatTime
+    #     Changed in version 3.3: Previously, the default ISO 8601
+    #     format was hard-coded as in this example: 2010-09-06
+    #     22:38:15,292 where the part before the comma is handled by a
+    #     strptime format string ('%Y-%m-%d %H:%M:%S'), and the part
+    #     after the comma is a millisecond value. Because strptime
+    #     does not have a format placeholder for milliseconds, the
+    #     millisecond value is appended using another format string,
+    #     '%s,%03d' – and both of these format strings have been
+    #     hardcoded into this method. With the change, these strings
+    #     are defined as class-level attributes which can be
+    #     overridden at the instance level when desired. The names of
+    #     the attributes are default_time_format (for the strptime
+    #     format string) and default_msec_format (for appending the
+    #     millisecond value).
+
+    # Get a reference to root logger.
+    # Note that getLogger('root') wouldn't do the same.
+    l = logging.getLogger()
+
+    # Get the formatter attached to the logger's first handler.
+    f = l.handlers[0].formatter
+
+    # Change default millisecond format from '%s,%03d' (ISO 8601) to
+    f.default_msec_format = '%s.%03d'
+
+    # There, SO much better ... wait, you can't see the difference?
+    # What if you increase your font size? Now? ... Now?  Anyway ...
+    return
+
+End hard way.
+
+
+Still to come, even harder way?  (We can only hope.)
+</pre>
+</section>
+<section>
+<h2>Tracing</h2>
+<pre>
+
+5/6/2016
+
+Coverage counts in .cover files.
+$ python3 -m trace -c --ignore-dir=/usr/ holey.py -i 3
+
+Tracing.
+$ python3 -m trace -t --ignore-dir=/usr/ holey.py -i 3 | less
+Note:  If the script is terminating due to an exception,
+       no trace displays.  To work around this, I wrapped
+       that point in the code in a try: / except Exception:,
+       and just exited in the exception block.
+
+
+*** Interactive testing with formatting
+In [1]: import imp
+In [2]: import holes.bitbased
+In [3]: h = holes.bitbased.HolesBitwise()
+In [4]: def bf(c): return '{:b}'.format(c)
+In [5]: [bf(c) for c in h.best_bit_combos(4)]
+Out[5]: ['10111', '11011', '11101']
+
+</pre>
+
+
+</section>
+
+
+<section>
+
+<h2>Iterators &amp; Generators</h2>
+
+
+<h3>Generator Caution</h3>
+
+<pre>
+
+If you validate params in a generator function, be aware the
+validations won't be triggered when the generator object is returned.
+The initial call to get the generator will succeed,
+then the generator will do the validation and raise an exception
+the first time the generator is iterated, possibly long after.
+I suppose this could be hard to debug.  Options I've thought of:
+        # TODO: Consider dealing with the fact that params
+        #       don't get checked immediately if generator
+        #       next is not called right away?
+        # Options:
+        #   1.  Ignore it, fact of life, and adjust unittests
+        #       to call next(retval) once or something.
+        #   2.  Adjust unittests but add a warning in error message.
+        #   3.  Try defining generator as an inner function,
+        #       then validate params in an outer function that
+        #       does NOT call yield itsefl, and return the
+        #       inner function as the return val off the outer?
+</pre>
+
+
+
+<h3>Performance of Generator Primatives</h3>
+<pre>
+
+5/2/2016
+
+
+Code like this...
+
+    import sys
+
+    def progress(iterable, step=1000000):
+        for n in iterable:
+            if n % step == 0:
+                print(n)
+            yield n
+        print(n)
+
+    def source(count):
+        return range(1, count+1)
+
+    def sink(iterable):
+        for n in iterable:
+            pass
+        return n
+
+    def pipe(count):
+        it = source(count)
+        return sink(it)
+
+    if __name__ == '__main__':
+
+        count = int(float(sys.argv[1])) # float allows passing e.g. 1e6
+        n = pipe(count)
+        print('{:,d}'.format(n))
+
+... run in ipython3 gives ...
+
+    In [68]: %run -t -N 3 misc/scratch.py 1000000
+    1,000,000
+    1,000,000
+    1,000,000
+
+    IPython CPU timings (estimated):
+    Total runs performed: 3
+      Times  :      Total      Per run
+      User   :       0.14 s,       0.05 s.
+      System :       0.00 s,       0.00 s.
+    Wall time:       0.14 s.
+
+
+    In [73]: %run -t -N 3 misc/scratch.py 1e7
+    10,000,000
+    10,000,000
+    10,000,000
+
+    IPython CPU timings (estimated):
+    Total runs performed: 3
+      Times  :      Total      Per run
+      User   :       2.06 s,       0.69 s.
+      System :       0.00 s,       0.00 s.
+    Wall time:       2.06 s.
+
+Adding progress into the pipeline gives ...
+
+    def pipe(count):
+        it = source(count)
+        it = progress(it, 1000000)
+        return sink(it)
+
+... resulting in ...
+
+    In [74]: %run -t -N 10 misc/scratch.py 1e7
+    1000000
+    2000000
+    ...
+    9000000
+    10000000
+    10000000
+    10,000,000
+    1000000
+    ...
+
+    IPython CPU timings (estimated):
+    Total runs performed: 10
+      Times  :      Total      Per run
+      User   :      47.27 s,       4.73 s.
+      System :       0.00 s,       0.00 s.
+    Wall time:      47.29 s.
+
+Increasing progress frequency (step value passed to progress)...
+
+    def pipe(count):
+        it = source(count)
+        it = progress(it, 1000)
+        return sink(it)
+
+... results in ...
+
+    In [75]: %run -t -N 10 misc/scratch.py 1e7
+    ...
+    IPython CPU timings (estimated):
+    Total runs performed: 10
+      Times  :      Total      Per run
+      User   :      43.62 s,       4.36 s.
+      System :       0.68 s,       0.07 s.
+    Wall time:      45.13 s.
+
+... so it's not the printing part that's taking the time.
+
+Summary so far:
+
+    %run -t -N &lt;some # of repeats&gt; misc/scratch.py 1e7
+
+    0.69 s. per run with no progress generator in pipeline
+    4.73 s. per run with progress generator printing infrequently
+    4.36 s. per run with progress generator printing 1000 times more
+
+Conclusion:
+
+    Adding a progress generator to an pipeline of generators
+    can cost a lot of time.  This is true without user-defined
+    classes involved, and without iterator pipeline
+    can increase time taken by a lot.
+
+    Also, above timings were all with -N &lt;repeat&gt; I believe, but
+    NOTE: in ipython3, the non-N command below often seemed faster,
+          I think they are supposed to be equivalent:
+    %run -t script
+    %run -t -N 1 script
+
+What about putting a generator that does nothing in the pipeline?
+
+    def noop(iterable):
+        for n in iterable:
+            yield n
+
+With nothing in pipeline...
+
+    def pipe(count):
+        it = source(count)
+        # it = noop(it)
+        # it = progress(it, 1000000)
+        return sink(it)
+
+...I get...
+
+    In [7]: %timeit -n 1 misc.scratch.pipe(10000000)
+    1 loops, best of 3: 609 ms per loop
+
+    In [8]: %timeit -n 1 misc.scratch.pipe(10000000)
+    1 loops, best of 3: 458 ms per loop
+
+
+With noop in pipeline...
+
+    def pipe(count):
+        it = source(count)
+        it = noop(it)
+        # it = progress(it, 1000000)
+        return sink(it)
+
+...I get...
+
+    In [11]: imp.reload('misc.scratch')
+    In [12]: imp.reload(misc.scratch)
+
+    In [16]: %timeit -n 1 misc.scratch.pipe(10000000)
+    1 loops, best of 3: 2.14 s per loop
+
+    In [17]: %timeit -n 1 misc.scratch.pipe(10000000)
+    1 loops, best of 3: 1.46 s per loop
+
+With 5 noops in pipeline...
+
+    def pipe(count):
+        it = source(count)
+        it = noop(it)
+        it = noop(it)
+        it = noop(it)
+        it = noop(it)
+        it = noop(it)
+        # it = progress(it, 1000000)
+        return sink(it)
+
+...I get...
+
+In [19]: imp.reload(misc.scratch)
+
+In [20]: %timeit -n 1 misc.scratch.pipe(10000000)
+1 loops, best of 3: 8.15 s per loop
+
+In [22]: %timeit -n 1 misc.scratch.pipe(10000000)
+1 loops, best of 3: 5.59 s per loop
+
+
+With no noops in pipeline, but 1 progress in pipeline...
+
+    def pipe(count):
+        it = source(count)
+        # it = noop(it)
+        it = progress(it, 1000000)
+        return sink(it)
+
+...I get...
+
+    In [24]: imp.reload(misc.scratch)
+
+    In [25]: %timeit -n 1 misc.scratch.pipe(10000000)
+    ...
+    1 loops, best of 3: 3.1 s per loop
+
+    In [27]: %timeit -n 1 misc.scratch.pipe(10000000)
+    ...
+    1 loops, best of 3: 4.02 s per loop
+
+With no noops in pipeline, but 5 progresses in pipeline...
+...I get...
+
+    In [28]: imp.reload(misc.scratch)
+
+    In [29]: %timeit -n 1 misc.scratch.pipe(10000000)
+    ...
+    1 loops, best of 3: 21.6 s per loop
+
+Conclusion:
+
+    Yup, adding more generators in a pipeline costs time.
+    Perhaps...
+        base (none)   0.5 sec          per 10e7 iterations
+        noop        + 1.0 to 1.5 sec   per 10e7 iterations
+        progress    + 2.5 to 4.0 sec   per 10e7 iterations
+    Note that this is a test progress generator, no fancy logging.
+
+Tried dividing total into 100 parts and chaining...
+
+    def chain(count, parts=100):
+        partcount = count // parts
+        its = list(source(partcount) for i in range(parts))
+        it = itertools.chain(*its)
+        it = progress(it, 50000)
+        return sink(it)
+
+Conclusion:
+    Chaining 100 parts together was not noticably slower.
+
+A fake generator to chain with others which yields no elements,
+but can log the fact that we've passed that point in the chain.
+Note that it has no knowledge of final count of previous
+iterator in chain or anything.
+"chain" here refers to itertools.chain(), not just in a pipeline.
+
+    def noteend(iterable):
+        if False: yield 
+        print('Hey, it finished ' + repr(iterable))
+        return
+
+It seemed to work using the following (ugly) code...
+
+    def chain(count, parts=100):
+        partcount = count // parts
+        its = list(source(partcount) for i in range(parts))
+        itsandends = []
+        for it in its:
+            itsandends.append(it)
+            itsandends.append(noteend(it))
+        it = itertools.chain(*itsandends)
+        it = itertools.chain(it, noteend(it))
+        it = progress(it, 50000)
+        return sink(it)
+
+Hmm...
+    I don't see an application here, (unless a print=print param
+    would help if you step really small so you print a LOT).
+
+    https://docs.python.org/3/library/itertools.htm
+
+    def dotproduct(vec1, vec2):
+        return sum(map(operator.mul, vec1, vec2))
+    ...
+
+        Note, many of the above recipes can be optimized by replacing
+        global lookups with local variables defined as default values.
+        For example, the dotproduct recipe can be written as:
+
+    def dotproduct(vec1, vec2, sum=sum, map=map, mul=operator.mul):
+        return sum(map(mul, vec1, vec2))
+</pre>
+
+</section>
+<section>
+
+<h2>Misc</h2>
+
+
+<h2>List comprehension example</h2>
+<pre>
+
+5/16/2016
+
+from math import factorial
+def nChk(n,k): return factorial(n) // (factorial(k) * factorial(n-k))
+stuff = [(n, k, nChk(n,k)) for n in range(1,10) for k in range(n+1)]
+
+</pre>
+
+<h3>Record of performance</h3>
+<pre>
+length 29
+
+0.3.6:98a6282accfa
+$ time python3 -m cProfile -o misc/temp29o.prof ./holey.py 29 -o
+   ncalls  tottime  percall  filename:lineno(function)
+   711640   19.783    0.000  ./holes/iterold.py:43(distances_covered)
+  1683361   13.815    0.000  ./holes/iterold.py:98(&lt;genexpr&gt;)
+ 23825414    4.584    0.000  {method 'add' of 'set' objects}
+   711640    4.264    0.000  ./holes/iterold.py:131(combo_measures)
+        8    3.033    0.379  ./holes/iterold.py:167(&lt;genexpr&gt;)
+
+0.3.6:98a6282accfa
+$ time python3 -m cProfile -o misc/temp29.prof ./holey.py 29
+   ncalls  tottime  percall  filename:lineno(function)
+  1683352   49.913    0.000  ./holes/iterbased.py:136(lengths_covered)
+47614144/7   42.341    0.000  ./holes/_util.py:56(log_progress)
+  1683353   20.008    0.000  ./holes/iterbased.py:102(&lt;genexpr&gt;)
+  1683352   14.000    0.000  ./holes/iterbased.py:118(combo_measures)
+ 55586311   12.120    0.000  {method 'add' of 'set' objects}
+
+0.3.6:98a6282accfa (commented out progress in all_combos &amp; w n_dots)
+$ time python3 -m cProfile -o misc/temp29modb.prof ./holey.py 29
+   ncalls  tottime  percall  filename:lineno(function)
+  1683352   52.211    0.000  ./holes/iterbased.py:136(lengths_covered)
+  1683353   16.451    0.000  ./holes/iterbased.py:102(&lt;genexpr&gt;)
+  1683352   14.680    0.000  ./holes/iterbased.py:118(combo_measures)
+ 55586311   12.288    0.000  {method 'add' of 'set' objects}
+1683368/7    6.568    0.000  ./holes/_util.py:56(log_progress)
+</pre>
+
+</section>
+<section>
+
+<h2>Algorithms</h2>
+<h3>popcount - counting 1 bits</h3>
+<pre>
+
+5/7/2016
+
+I believe I read that this actually does not perform too badly:
+bin(n).count("1")
+
+A C example:
+http://www.cs.utexas.edu/users/djimenez/utsa/cs3343/lecture25.html
+    /* masking the j'th bit as j goes through all the bits,
+     * count the number of 1 bits.  this is called finding
+     * a population count.  [so THAT's where "popcount" comes from]
+     */
+    for (j=0,c=0; j&lt;32; j++) if (i &amp; (1&lt;&lt;j)) c++;
+...
+If you don't like that code, let that be a lesson to you about
+avoiding bit-twiddling in C :-). If you do like the code,
+get some help for that.
+
+Hmm:
+
+http://code.stephenmorley.org/articles/hakmem-item-175/
+
+
+Or maybe:
+https://en.wikipedia.org/wiki/Combinatorial_number_system
+// find next k-combination
+bool next_combination(unsigned long& x) // assume x has form x'01^a10^b in binary
+{
+  unsigned long u = x &amp; -x; // extract rightmost bit 1; u =  0'00^a10^b
+  unsigned long v = u + x; // set last non-trailing bit 0, and clear to the right; v=x'10^a00^b
+  if (v==0) // then overflow in v, or x==0
+    return false; // signal that next k-combination cannot be represented
+  x = v +(((v^x)/u)&gt;&gt;2); // v^x = 0'11^a10^b, (v^x)/u = 0'0^b1^{a+2}, and x ← x'100^b1^a
+  return true; // successful completion
+}
+This is called Gosper's hack;[7]
+corresponding assembly code was described as item 175 in HAKMEM.
+
+Or:
+
+http://webhome.csc.uvic.ca/~haron/CoolCocoon.pdf
+static void gen ( int s, int t ) {
+    if (s &gt; 1) { gen( s-1, t );
+        swap( 1, t );  swap( s+t, s+t-1 ); visit( b ); }
+    if (t &gt; 1) { gen( s, t-1 );
+        swap( t-1, s+t-1 );  visit( b ); }
+}
+
+Or:
+http://hackersdelight.org/hdcode.htm
+
+Or:
+http://stackoverflow.com/questions/127704/algorithm-to-return-all-combinations-of-k-elements-from-n
+
+Or:
+https://www.cl.cam.ac.uk/~am21/hakmemc.html
+ITEM 175 (Gosper):
+To get the next higher number with the same number of 1 bits:
+
+unsigned nexthi_same_count_ones(unsigned a) {
+  /* works for any word length */
+  unsigned c = (a &amp; -a);
+  unsigned r = a+c;
+  return (((r ^ a) &gt;&gt; 2) / c) | r);
+}
+
+
+</pre>
+
+</section>
+<section>
+
+<h2>Unit Testing</h2>
+
+<h3>General Tips</h3>
+<pre>
+5/13/2016 (Friday)
+
+    unittest.main()
+
+...or...
+
+    loader = unittest.defaultTestLoader
+    suite = loader.loadTestsFromTestCase(TestHolesBase)
+    runner = unittest.TextTestRunner()
+    runner.run(suite)
+
+...or...
+
+    test_modules = (sys.modules[__name__],  # this module
+                    test_holes_util,)       # another module
+    allsuite = unittest.TestSuite()
+    for mod in test_modules:
+        suite = unittest.defaultTestLoader.loadTestsFromModule(mod)
+        allsuite.addTest(suite)
+    runner = unittest.TextTestRunner()
+    runner.run(allsuite)
+
+<aside class="rant">
+So you have a base class unittest.TestCase.
+You subclass it, and the supported convention is to start
+start all of your test method names with "test".
+When you run unittest.main(), it finds the test case(s?)
+in the module, and runs the test methods beginning with "test".
+
+However, when you try to go beyond using unittest.main(),
+and try using a TextTestRunner to run your tests, then you get...
+
+AttributeError: 'HolesBaseTestCase' object has no attribute 'runTest'
+
+...unless you explicitly pass which single test method to run
+to your TestCase descendant's constructor, or use something like...
+
+suite=unittest.defaultTestLoader.loadTestsFromTestCase(HolesTestCase)
+runner=unittest.TextTestRunner()
+runner.run(suite)
+
+So, my question is this. who (Kent Beck?) in their right mind thought
+it was a good idea to create a TestCase class THAT DOESN'T KNOW ABOUT
+ITS OWN BLOODY TESTS!!?  Uhg.  Instead, lets have some complicated
+outside machinery determine them.  I can maybe see having outside
+machinery RUN them, since you want them to run independently,
+and some code or framework needs to do the setup, running, exception
+catching, and teardown for each test method.  But it still seems
+like more non-obvious hoops than I should have to go through to
+even get an outside thing like TextTestRunner to run the tests...
+I guess because a third thing needs to find them.
+Hmm, lets see, I created a TextTestRunner and called its run() method,
+passing an instance of my TestCase object ... I WONDER what tests
+I should run by default?!
+
+Oh, and: Grumble, grumble, grr.
+</aside>
+</pre>
+
+<h3>Minor unittest tip</h3>
+<pre>
+
+    # Note on TestCase.assertCountEqual()
+    # Note: I can use this on sequences if I don't care about
+    # the order of (top level) elements.  Nested sub-elements
+    # can still matter.  For example...
+    # self.assertCountEqual( (2,1,0),(1,2,0) )   # Asserts true
+    # self.assertCountEqual( ( (0,1,2),(2,1,0) ),
+    #                        ( (0,1,2),(1,2,0) ) ) # Asserts false
+    # AssertionError: Element counts were not equal:
+    # First has 1, Second has 0:  (2, 1, 0)
+    # First has 0, Second has 1:  (1, 2, 0)
+</pre>
+</section>
+<section>
+
+<h2>Module Reloading</h2>
+<pre>
+
+[To expand upon when I have a chance...]
+
+python 2:
+    was there a reload statement or default function?
+python 3.3:
+    import imp
+    imp.reload(mymodule)
+    [there's also some new importlib library?]
+ipython 3.3:
+    # import imp like above, or could try deep reload (from ipython?)
+    dreload(mymodule)
+
+Remember to re-create any objects of classes from the reloaded module.
+</pre>
+
+</section>
+<section>
+<h2>Import from CSV</h2>
+<pre>
+
+With Standard Library csv module...
+    bfname = '../stats/books/books.csv'
+    bf = open(bfname)
+    import csv
+    breader = csv.DictReader(bf)
+    breader.fieldnames
+    books = list(breader)
+
+With numpy...
+    import numpy as np
+    bfile = '../stats/books/books.csv'
+    books = np.recfromcsv(bfile)
+
+
+*** logging StreamHandler &amp; StringIO stream tip
+
+    logger = logging.getLogger('grab_test')
+    logger.addHandler(logging.NullHandler())# Libraries seen not heard
+
+    def do_stuff_to_grab():
+        print('    printed 1')
+        logger.info('logged as info')
+        logger.error('logged as error')
+        logger.debug('logged as debug')
+        print('    printed 2')
+
+    def grab_log_test():
+
+        log_stream = io.StringIO('beginning')
+        #logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
+        logger.addHandler(logging.StreamHandler(stream=log_stream))
+
+        do_stuff_to_grab()
+
+        print()
+        print('Position in stream:', log_stream.tell())
+        print()
+
+        #print('Getting all regardless of seek',log_stream.getvalue())
+        # ... or ...
+        log_stream.seek(0)
+        print('Position in stream:', log_stream.tell())
+        print()
+        for line in log_stream:
+            print('pulled from log:', line, end='')
+</pre>
+
+</section>
+<section>
+
+<h2>Mercurial on Android Attempt</h2>
+<pre>
+Pure python mercurial tips:
+    On my main Fedora workstation namib, I did...
+    $ sudo yum install python-devel
+    $ sudo yum install python-docutils
+    $ tar -xvf mercurial-3.8.2.tar.gz
+    $ cd mercurial-3.8.2/
+    $ make PURE=--pure all
+
+    # Make sure it didn't compile C extensions, eg only one base85
+    $ find build | grep base85
+    build/lib.linux-x86_64-2.7/mercurial/pure/base85.py
+
+    $ make PURE=--pure PREFIX=$(pwd)/temp install
+
+Prepping to copy to Android:
+    $ cp -rv temp hg-3.8.2.pure
+    $ find hg-3.8.2.pure -name '*.pyc' -delete
+    $ tar -czvf hg-3.8.2.pure.tar.gz hg-3.8.2.pure
+
+:-(
+
+Failed on something with the grp module after copying
+to Android with QPython 2
+
+</pre>
+</section>
+</article>
+</body>
+</html>
+

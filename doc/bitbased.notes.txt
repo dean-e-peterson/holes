@@ -1,0 +1,108 @@
+Notes and comments on holes/bitbased.py
+
+Timing _add_bit_recursive(), which is the combination generator
+for bit_combos_with_n_dots().
+
+    In [92]: %time len(tuple(h._add_bit_recursive(28,7)))
+    CPU times: user 2.66 s, sys: 0.03 s, total: 2.69 s
+    Wall time: 2.70 s
+    Out[92]: 1184040
+
+    In [93]: %time len(tuple(h._add_bit_recursive(28,7)))
+    CPU times: user 3.87 s, sys: 0.04 s, total: 3.92 s
+    Wall time: 3.92 s
+    Out[93]: 1184040
+
+    In [95]: %time len(tuple(h._add_bit_recursive(38,7)))
+    CPU times: user 26.29 s, sys: 0.34 s, total: 26.63 s
+    Wall time: 26.64 s
+    Out[95]: 12620256
+
+    In [89]: %time len(tuple(h._add_bit_recursive(38,7)))
+    CPU times: user 37.84 s, sys: 0.49 s, total: 38.33 s
+    Wall time: 38.34 s
+    Out[89]: 12620256
+
+Compare with itertools.combinations.
+
+    In [45]: %time len(tuple(itertools.combinations(range(28),7)))
+    CPU times: user 0.86 s, sys: 0.08 s, total: 0.95 s
+    Wall time: 0.94 s
+    Out[45]: 1184040
+
+    In [46]: %time len(tuple(itertools.combinations(range(28),7)))
+    CPU times: user 1.09 s, sys: 0.07 s, total: 1.16 s
+    Wall time: 1.16 s
+    Out[46]: 1184040
+
+    In [41]: %time len(tuple(itertools.combinations(range(38),7)))
+    CPU times: user 10.11 s, sys: 0.92 s, total: 11.03 s
+    Wall time: 11.03 s
+    Out[41]: 12620256
+
+    In [52]: %time len(tuple(itertools.combinations(range(38),7)))
+    CPU times: user 11.91 s, sys: 1.16 s, total: 13.07 s
+    Wall time: 13.07 s
+    Out[52]: 12620256
+
+Conclusion: Mine bit one takes 3 (-3.5?) times as long as itertools:-)
+
+Note: We could easily generate all possible binary combinations
+for a given length by using range to generate all those integers.
+However, that produces many more non-optimal solutions that
+have to be filtered out than starting with combinations with
+specific low #'s of dots. -- [5/15/2016 addition]
+
+from holes/bitbased.py:  all_bit_combos()
+    # Never tested!
+    def all_bit_combos(self, distance):
+        # {{{
+        bit_combos = chain.from_iterable(
+            self.bit_combos_with_n_dots(distance, n)
+            for n in range(distance + 2))
+        return bit_combos
+        # }}}
+
+
+Saved off from holes/bitbased.py:  best_bit_combos()
+        found_one = False
+        # for dotcount in range(distance + 2):
+        #     bitcombos=self.bit_combos_with_n_dots(distance,dotcount)
+        # Optimization: Generate inner combos and add endpoints.
+
+
+Saved off from holes/bitbased.py:  bit_combos_with_endpoints()
+        # Alternative to for loop and yield.
+        #  (Faster???  ToDo:Check?, but if so modify dist 1 above?)
+        # bit_combos = ( ( 1 << distance |  # leftmost bit/endpoint
+        #                  ibc << 1 |       # inner combo shifted 1
+        #                  1 )              # rightmost bit/endpoint
+        #                for ibc in inner_bit_combos )
+        # return bit_combos
+
+
+Saved off from holes/bitbased.py:  _add_bit_recursive()
+    def _add_bit_recursive(self, length, dotcount, bitcombo=0):
+        """
+        Recursive inner combo generator for bit_combos_with_n_dots.
+        To match math conventions, length here is number of bit
+        positions, equal to distance + 1 from bit_combos_with_n_dots.
+        """
+        # At end of recursion (or if user wants 0 dots), emit combo.
+        if dotcount == 0:
+            # print('  yielding {:#b}'.format(bitcombo))
+            yield bitcombo
+        else:
+            remaining_dots = dotcount - 1
+            # Loop though all positions where we can put this dot.
+            for pos in range(remaining_dots, length):
+                # Add this dot.
+                updated_bitcombo = bitcombo | (1 << pos)
+                # Add any remaining dots.
+                # Replace yield from for Python 3.2 compatibility.
+                for fullcombo in self._add_bit_recursive(pos,
+                                                   remaining_dots,
+                                                   updated_bitcombo):
+                    yield fullcombo
+        return
+
