@@ -1,3 +1,31 @@
+#
+# Custom .gitignore content for holey.py
+# Hopefully successfully converted from .hgignore format.
+#
+
+# Not that anyone would be so lost to all reason as to keep
+# both git and mercurial repositories of the same working
+# directory, but, just in case, hypothetically, you know...
+/.hg/
+
+
+log/
+/hist/
+/misc/
+
+# Vim swap files.
+.*.swp
+
+# Python trace module coverage files.
+*.cover
+
+# IPython log files.
+ipython_log.py*
+
+#
+# GitHub's python template .gitignore contents
+#
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -102,3 +130,4 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
