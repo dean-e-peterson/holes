@@ -245,7 +245,11 @@ class HolesIterator(_base.HolesBase):
         iterable is an iterable/sequence whose items each have len(),
         like an iterable whose items are nested sequences themselves.
         """
-        first_item = next(iterable)
+        try:
+            first_item = next(iterable)
+        except StopIteration:
+            # Gracefully handle case where there isn't even a first element.
+            return
         length = len(first_item)
         yield first_item
 
