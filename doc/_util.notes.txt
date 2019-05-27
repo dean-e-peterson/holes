@@ -1,26 +1,4 @@
 Comments from and notes on holes/_util.py
-holes/_util.py, hg keywords and __version__
-# Hg version control keyword expansion comments: {{{
-# If the following version stuff works, I hope to have
-# performance tests recorded across script revisions,
-# using the following to allow retrieval of the exact
-# source code that produced the results.
-#
-# I'm using the (not recommended) hg keyword extension.
-# In my .hgrc I defined a keywordmap DPTag like so...
-# DPTag = {latesttag}.{latesttagdistance}:{node|short}
-# Hg version control replaces DPTag with something like
-#   DPTag: 0.1.23:a1b1c1d2e2f ,
-# where... 0.1 is the tag I assigned with hg tag 0.1,
-#           23 is hg # of checkins since that tag or something, and
-# a1b1c1d2e2f2 is the short form hg changeset id, which I think
-#              should let me get the exact source code back.
-
-_hg_keyword = '$DPTag$'
-__version__ = _hg_keyword[8:-2]
-__author__ = 'lethargo'
-# }}}
-
 
 holes/_util.py, printlog()
 Rationale for creating a printlog function instead of

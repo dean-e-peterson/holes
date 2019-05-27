@@ -11,11 +11,7 @@ import functools
 
 # Module global stuff {{{
 __all__ = []
-
-# Arbitrary comment to change to force a version rev of this file.b
-# Hg version control keyword expansion; notes in doc/_util.notes.txt
-_hg_keyword = '$DPTag$'
-__version__ = _hg_keyword[8:-2]
+__version__ = '0.6.0'
 __author__ = 'lethargo'
 
 HOLEY_TIME_FORMAT = '%Y/%m/%d %H:%M:%S'
