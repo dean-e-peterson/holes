@@ -11,7 +11,7 @@ import functools
 
 # Module global stuff {{{
 __all__ = []
-__version__ = '0.6.0'
+__version__ = '0.6.0.multi'
 __author__ = 'lethargo'
 
 HOLEY_TIME_FORMAT = '%Y/%m/%d %H:%M:%S'

@@ -35,6 +35,10 @@ def main():
         holesclass=_base.implementations[args.impl]['_class']
         holes = holesclass()
 
+        # Parallelized implementation needs to know how many processes
+        if args.impl == 'bitparallel':
+            holes.parallels = args.parallels
+
         # If requested, loop from 1 through (-t) the specified length.
         if args.thru:
             lengths = range(1, args.length + 1)
@@ -111,6 +115,20 @@ def parse_command_line():
         default='bitwise',
         help='Use bitwise operation implementation (the default).')
     group.add_argument(
+        '-n',
+        dest='impl',
+        action='store_const',
+        const='bitnumpy',
+        help='Use bitwise implementation with numpy.')
+    group.add_argument(
+        '-p',
+        dest='parallels',
+        action='store',
+        type=int,
+        metavar='count',
+        help='Use parallelized bitwise implementation with numpy.')
+        # Note impl set to bitparallel for -p below.
+    group.add_argument(
         '-i',
         dest='impl',
         action='store_const',
@@ -122,12 +140,6 @@ def parse_command_line():
         action='store_const',
         const='iterold',
         help='Use old, non-class-based iterator implementation.')
-    group.add_argument(
-        '-n',
-        dest='impl',
-        action='store_const',
-        const='bitnumpy',
-        help='Use bitwise implementation with numpy.')
 
     parser.add_argument(
         '-d',
@@ -158,10 +170,14 @@ def parse_command_line():
 
     args = parser.parse_args()
 
+    # If -p (parallelize) was specified, fill in desired implementation.
+    if args.parallels != None:
+        args.impl = 'bitparallel'
+
     # Validate the non-obvious.
     if args.impl not in _base.implementations:
-        if args.impl == 'bitnumpy':
-            raise Exception('Numpy implementation unavailable.')
+        if args.impl == 'bitnumpy' or args.impl == 'bitparallel':
+            raise Exception('Numpy implementations unavailable.')
         else:
             raise Exception('Invalid implementation specified.')
 
