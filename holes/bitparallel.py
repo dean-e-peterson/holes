@@ -33,8 +33,31 @@ class HolesBitwiseParallel(bitnumpy.HolesBitwiseNumpy):
         # Two threads or processes by default.
         self.parallels = 2
 
+    
+    def bit_combos_that_measure_with_givens(
+            self, distance, dotcount, leading=[], trailing=[]):
+        """
+        Good bitwise combos with dotcount dots that include some
+        fixed given leading or trailing bits.  In this contect,
+        good means it filters to only return combos that can measure
+        distance, that is, where somewhere there are dots 1 apart,
+        2 apart, ..., up to distance apart.
+        This method is meant for parallelization or clustering
+        scenarios, where you want to filter a bunch of possibilities
+        with different givens that are being processed in parallel,
+        then only return the useful combos to the driver process.
+        """
+        # Start only with those combinations that have given end bits.
+        combos = self.bit_combos_with_givens(distance, dotcount,
+                                             leading, trailing)
+        # Let bitnumpy chunk it up and determine which are good.
+        combos = self.bit_combos_that_measure(combos, distance)
+        for combo in combos:
+            yield combo
 
-    def bit_combos_with_givens(self, distance, dotcount, leading=[], trailing=[]):
+
+    def bit_combos_with_givens(
+            self, distance, dotcount, leading=[], trailing=[]):
         """
         All bitwise combos with dotcount dots that include some
         fixed given leading or trailing bits.  This can be useful
@@ -108,6 +131,10 @@ class HolesBitwiseParallel(bitnumpy.HolesBitwiseNumpy):
 
 
     def bit_combos_with_ends(self, distance, dotcount):
+        """
+        For the moment, just override bitnumpy.py's implementation
+        with an implementation using bit_combos_with_givens.
+        """
         leading = [1]
         trailing = [1]
         for bit_combo in self.bit_combos_with_givens(distance,

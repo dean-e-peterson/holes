@@ -46,12 +46,28 @@ class TestHolesBitwiseParallel(test_holes_base.TestHolesBase):
 
     def test_bit_combos_with_givens(self): 
         distance = 8
-        leading = [1, 0, 1]
-        trailing = [0, 1]
+        leading = [1, 0, 0]
+        trailing = [1, 1]
         for dots in range(3, 8):
-            actual_bits = self.h.bit_combos_with_givens(distance, dots, leading, trailing)
+            actual_bits = self.h.bit_combos_with_givens(distance,
+                                                        dots,
+                                                        leading,
+                                                        trailing)
             actual = (holes._util.sequence_from_bits(ab) for ab in actual_bits)
             self.assertMatchesAllData(distance, dots, actual, results_w_givens)
+
+    def test_bit_combos_that_measure_with_givens(self):
+        distance = 8
+        leading = [1, 0, 0]
+        trailing = [1, 1]
+        dots = 5
+        actual_bits = self.h.bit_combos_that_measure_with_givens(distance,
+                                                                 dots,
+                                                                 leading,
+                                                                 trailing)
+        actual = (holes._util.sequence_from_bits(ab) for ab in actual_bits)
+        print('{} {}'.format(distance, dots))
+        self.assertMatchesBestData(distance, actual, results_w_givens)
 
 # Old implementations {{{
 # Filling in gaps in the old interfaces is low priority.
