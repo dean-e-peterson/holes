@@ -58,10 +58,29 @@ def print_combos(nested_dict):
             for combination in dotcount_list:
                 print(combination)
 
-
-# Expected result combos.
+# Expected result combos when a leading [1, 0, 1], and a trailing [0, 1]
+# are passed to bit_combos_with_givens.
+results_w_givens = {
+    9: {5: (combo(9, 5, 0b101000001, spans=True),),
+        6: (combo(9, 6, 0b101000101, spans=True),
+            combo(9, 6, 0b101001001, spans=True),
+            combo(9, 6, 0b101010001, spans=True),
+            combo(9, 6, 0b101100001, spans=True),),
+        7: (combo(9, 7, 0b101001101, spans=True),
+            combo(9, 7, 0b101010101, spans=True),
+            combo(9, 7, 0b101100101, spans=True),
+            combo(9, 7, 0b101011001, spans=True),
+            combo(9, 7, 0b101101001, spans=True),
+            combo(9, 7, 0b101110001, spans=True),),
+        8: (combo(9, 8, 0b101011101, spans=True),
+            combo(9, 8, 0b101101101, spans=True),
+            combo(9, 8, 0b101110101, spans=True),
+            combo(9, 8, 0b101111001, spans=True),),
+        9: (combo(9, 9, 0b101111101, spans=True),),
+        },
+}
+# Expected result combos. {{{
 results = {
-    # {{{
     # First key is length (distance+1).
     # Nested inner key is dotcount.
     0: {0: (combo(0, 0, 0b0),), # Actually 0b with 0 digits, but...
@@ -133,7 +152,30 @@ results = {
             combo(5, 4, 0b11110),),
         5: (combo(5, 5, 0b11111, spans=True, measures=True),),
         },
-} # End results combos }}}
+} 
+
+# Expected result combos when a leading [1, 0, 1], and a trailing [0, 1]
+# are passed to bit_combos_with_givens.
+results_w_givens = {
+    9: {3: (combo(9, 3, 0b101000001, spans=True),),
+        4: (combo(9, 4, 0b101000101, spans=True),
+            combo(9, 4, 0b101001001, spans=True),
+            combo(9, 4, 0b101010001, spans=True),
+            combo(9, 4, 0b101100001, spans=True),),
+        5: (combo(9, 5, 0b101001101, spans=True),
+            combo(9, 5, 0b101010101, spans=True),
+            combo(9, 5, 0b101100101, spans=True),
+            combo(9, 5, 0b101011001, spans=True),
+            combo(9, 5, 0b101101001, spans=True),
+            combo(9, 5, 0b101110001, spans=True),),
+        6: (combo(9, 6, 0b101011101, spans=True),
+            combo(9, 6, 0b101101101, spans=True),
+            combo(9, 6, 0b101110101, spans=True),
+            combo(9, 6, 0b101111001, spans=True),),
+        7: (combo(9, 7, 0b101111101, spans=True),),
+        },
+}
+# End results combos }}}
 
 if __name__ == '__main__':
 
