@@ -133,7 +133,7 @@ results = {
         },
 } 
 
-# Expected result combos when a leading [1, 0, 0], and a trailing [1, 1]
+# Expected result combos when a leading (1, 0, 0), and a trailing (1, 1)
 # are passed to bit_combos_with_givens.
 results_w_givens = {
     9: {0: (),  # Because of givens, no combos generated with < 3 dots

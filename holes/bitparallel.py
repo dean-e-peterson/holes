@@ -57,7 +57,7 @@ class HolesBitwiseParallel(bitnumpy.HolesBitwiseNumpy):
 
 
     def bit_combos_with_givens(
-            self, distance, dotcount, leading=[], trailing=[]):
+            self, distance, dotcount, leading=(), trailing=()):
         """
         All bitwise combos with dotcount dots that include some
         fixed given leading or trailing bits.  This can be useful
@@ -68,26 +68,26 @@ class HolesBitwiseParallel(bitnumpy.HolesBitwiseNumpy):
            one node generate all combos starting with 0, and the
            other node generate all combos starting with 1.
         The geven leading and trailing bits are passed as
-        arrays of 0's and 1's.
+        tuples of 0's and 1's.
         """
         # TODO: Move to _util ?
-        def array_to_bits(array):
+        def tuple_to_bits(tuple):
             bits = 0
-            for value in array:
+            for value in tuple:
                 bits <<= 1
                 if value == 1:
                     bits |= 1
                 elif value == 0:
                     pass
                 else:
-                    raise ValueError("Values in array must be 0's or 1's")
+                    raise ValueError("Given tuple values must be 0's or 1's")
             return bits
 
         def bitmask_of_givens(distance, leading, trailing):
             length = distance + 1
-            leading_bits = array_to_bits(leading)
+            leading_bits = tuple_to_bits(leading)
             leading_bits <<= (length - len(leading))
-            trailing_bits = array_to_bits(trailing)
+            trailing_bits = tuple_to_bits(trailing)
             given_bits = leading_bits | trailing_bits
             return given_bits
 
