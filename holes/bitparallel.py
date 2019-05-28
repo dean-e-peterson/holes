@@ -79,16 +79,21 @@ class HolesBitwiseParallel(bitnumpy.HolesBitwiseNumpy):
             return count
 
         inner_distance = distance - len(leading) - len(trailing)
+        inner_length = inner_distance + 1
         inner_dotcount = dotcount - dotcount_of_givens(leading, trailing)
-        if inner_distance < 0:
-            raise ValueError("Distance must at least cover given bits")
+        if inner_length < 0:
+            raise ValueError(("Distance {} must at least cover given " +
+                              "leading ({}) and trailing({}) bits").format(
+                               distance, leading, trailing))
         if inner_dotcount < 0:
-            raise ValueError("Dotcount must at least cover given bits")
+            raise ValueError(("Dotcount {} must at least cover given " +
+                              "leading ({}) and trailing({}) bits").format(
+                               dotcount, leading, trailing))
 
         given_bits = bitmask_of_givens(distance, leading, trailing)
 
         # Avoid 0-length inner combo.
-        if inner_distance == 0:
+        if inner_length == 0:
             bit_combo = given_bits
             yield bit_combo
             return

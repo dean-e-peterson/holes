@@ -38,6 +38,11 @@ class TestHolesBitwiseNumpy(test_holes_base.TestHolesBase):
         impl_class = holes._base.implementations['bitnumpy']['_class']
         self.h = impl_class()
 
+class TestHolesBitwiseParallel(test_holes_base.TestHolesBase):
+    def setUp(self):
+        impl_class = holes._base.implementations['bitparallel']['_class']
+        self.h = impl_class()
+
 # Old implementations {{{
 # Filling in gaps in the old interfaces is low priority.
 #class TestHolesIteratorOld(test_holes_base.TestHolesBase):

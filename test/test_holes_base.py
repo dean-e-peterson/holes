@@ -146,4 +146,6 @@ class TestHolesBase(unittest.TestCase):
         with assertLogsDean(logger='holes', level='DEBUG'): #as strio:
             sink = tuple(self.h.best_combos(4))
         #print(strio.getvalue())
+
+    # TODO: Add tests of exception conditions.     
     # }}}
