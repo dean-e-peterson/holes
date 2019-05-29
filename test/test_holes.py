@@ -68,6 +68,15 @@ class TestHolesBitwiseParallel(test_holes_base.TestHolesBase):
         actual = (holes._util.sequence_from_bits(ab) for ab in actual_bits)
         self.assertMatchesBestData(distance, actual, results_w_givens)
 
+    # def test_parallelize(self):
+    #     distance = 5
+    #     dotcount = 4
+    #     self.h.parallels = 4
+    #     try:
+    #         self.h.parallelize(distance, dotcount)
+    #     finally:
+    #         self.h.parallels = 2 # Default
+
 # Old implementations {{{
 # Filling in gaps in the old interfaces is low priority.
 #class TestHolesIteratorOld(test_holes_base.TestHolesBase):

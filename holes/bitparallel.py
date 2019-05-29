@@ -11,6 +11,9 @@ along with numpy to try to boost the speed of doing bitwise operations.
 
 
 import logging  # {{{
+import functools
+import itertools
+import multiprocessing
 import numpy as np
 from . import _base
 from . import _util
@@ -33,7 +36,48 @@ class HolesBitwiseParallel(bitnumpy.HolesBitwiseNumpy):
         # Two threads or processes by default.
         self.parallels = 2
 
+
+    def parallelize(self, distance, dotcount):
+        # Get given patterns of some bits to give to parallel processes.
+        def inner_givens(parallels):
+            # Find max power of two that doesn't go over parallel degrees.
+            power_of_two = 0
+            while 2**power_of_two <= parallels:
+                power_of_two += 1
+            power_of_two -= 1
+            # TODO: Log if stepping down to a power of two.
+            return itertools.product((0,1), repeat=power_of_two)
+
+        # If single process, don't bother.
+        # TODO: Change to an error check for < 1 if general case works for 1.
+        if self.parallels <= 1:
+            pass
+            # Add degenerate case here perhaps
+            # just calling bit_combos_that_measure_with_givens
+            # with leading=(1,) and trailing=(1,)
+
+        # Concatenate a tuple (1,) onto beginning of each inner_given.
+        leading_givens = ( (1,) + ig for ig in inner_givens(self.parallels) )
+        # trailing givens is always (1,)
+
+        ### The following is definately broken
+        # Multiprocessing pool can easily map inputs to a function that takes
+        # one parameter as it's data.  Since the only thing we want to vary
+        # between the parallel processes is are the leading_givens, we just
+        # create a partial method that will call
+        # bit_combos_that_measure_with_givens
+        # with all other parameters set.
+        bit_combos_partial = functools.partialmethod(
+                                self.bit_combos_that_measure_with_givens,
+                                (distance, dotcount),
+                                {"trailing": (1,)})
+        for leading_given in leading_givens:
+            bit_combos_partial(leading=leading_given)
     
+    # TODO: Consider if want to convert bit combos to sequence combos
+    #       before returning from parallelized children?
+
+
     def bit_combos_that_measure_with_givens(
             self, distance, dotcount, leading=[], trailing=[]):
         """
@@ -143,10 +187,6 @@ class HolesBitwiseParallel(bitnumpy.HolesBitwiseNumpy):
                                                      trailing):
             # print(bin(bit_combo))
             yield bit_combo
-
-        #for bit_combo in super().bit_combos_with_ends(distance, dotcount):
-        #    print(bin(bit_combo))
-        #    yield bit_combo
 
 
 _base.register_implementation(HolesBitwiseParallel)
