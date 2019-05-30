@@ -13,7 +13,7 @@ along with numpy to try to boost the speed of doing bitwise operations.
 import logging  # {{{
 import functools
 import itertools
-import multiprocessing
+from multiprocessing import Process, SimpleQueue
 import numpy as np
 from . import _base
 from . import _util
@@ -37,12 +37,59 @@ class HolesBitwiseParallel(bitnumpy.HolesBitwiseNumpy):
         self.parallels = 2
 
 
-    def parallelize(self, distance, dotcount):
+    def best_bit_combos(self, distance):
+        # {{{
+        """
+        Copied from bitbased.py, but modified to account for the
+        fact that in a parallelized implementation, things are
+        returned a bit differently since filtering for good combos
+        happens in the children before the parent consolidates
+        the results.
+        """
+        found_one = False
+
+        # distance+1 positions, inclusive on both ends, +1 for range()
+        for dotcount in range(2, distance + 2):
+            #combos = self.bit_combos_with_ends(distance, dotcount)
+            combos = self.parallelize_good_combos(distance, dotcount)
+
+            # With the action taking place in children, and them
+            # filtering the results before this, this logging
+            # is now misplaced.
+            # TODO: Move this logging to the children, IF it is
+            # safe to log from multiple threads (or use locking?)
+            #label = 'bit_combos_with_ends({}, {})'.format(distance,
+            #                                              dotcount)
+            #combos = self.log_progress(combos, label, 100000000)
+
+            # Combos prefiltered, thank you very much.
+            #combos = self.bit_combos_that_measure(combos, distance)
+            for c in combos:
+                # Don't keep looking at longer dotcounts.
+                found_one = True
+                yield c
+
+            # Test found_one in the outer for loop, not the inner, so
+            # we can collect all good combos with same best dotcount.
+            # We just don't want to keep looking at higher dotcounts.
+            if found_one:
+                break
+        # }}}
+
+
+    def parallelize_good_combos(self, distance, dotcount):
         # Get given patterns of some bits to give to parallel processes.
-        def inner_givens(parallels):
+        def inner_givens(parallels, dotcount):
             # Find max power of two that doesn't go over parallel degrees.
+            # AND doesn't result in too many given bits for the dotcount
+            # being requested.  Dotcount - 2 is used to account for the
+            # two end dots, which are always 1's, and not included in the
+            # INNER givens.  (Example: If dot count is 3, no point trying to
+            # parallelize it with inner given (1,1), since the start and
+            # end dots already take two of the bits.)
+            # TODO: Clarify or document and test the heck out of this.
             power_of_two = 0
-            while 2**power_of_two <= parallels:
+            while (2**power_of_two <= parallels) and (power_of_two <= dotcount - 2):
                 power_of_two += 1
             power_of_two -= 1
             # TODO: Log if stepping down to a power of two.
@@ -56,24 +103,49 @@ class HolesBitwiseParallel(bitnumpy.HolesBitwiseNumpy):
             # just calling bit_combos_that_measure_with_givens
             # with leading=(1,) and trailing=(1,)
 
-        # Concatenate a tuple (1,) onto beginning of each inner_given.
-        leading_givens = ( (1,) + ig for ig in inner_givens(self.parallels) )
-        # trailing givens is always (1,)
+        # Concatenate a 1 onto beginning of each inner_given tuple.
+        leading_givens = ( (1,) + ig for ig in inner_givens(self.parallels, dotcount) )
+        trailing_given = (1,)
 
-        ### The following is definately broken
-        # Multiprocessing pool can easily map inputs to a function that takes
-        # one parameter as it's data.  Since the only thing we want to vary
-        # between the parallel processes is are the leading_givens, we just
-        # create a partial method that will call
-        # bit_combos_that_measure_with_givens
-        # with all other parameters set.
-        bit_combos_partial = functools.partialmethod(
-                                self.bit_combos_that_measure_with_givens,
-                                (distance, dotcount),
-                                {"trailing": (1,)})
+        # Spawn worker processes.
+        process_list = []
         for leading_given in leading_givens:
-            bit_combos_partial(leading=leading_given)
-    
+            #result = self.bit_combos_that_measure_with_givens(distance,
+            #                                                  dotcount,
+            #                                                  leading=leading_given,
+            #                                                  trailing=(1,))
+            # print('E', tuple(_util.sequence_from_bits(i) for i in tuple(result)))
+
+            # Handy print statement, keep this one, even if commented.
+            # print('C', dotcount, leading_given)
+            queue = SimpleQueue()
+            process = Process(target = self.parallelize_child_good_combos,
+                              args = (queue, distance, dotcount),
+                              kwargs = {"lead": leading_given,
+                                        "trail": trailing_given})
+            process.start()
+            process_list.append((process, queue))
+
+        # Collect worker processes
+        results = []
+        for (process, queue) in process_list:
+            results.extend(queue.get())
+            process.join()
+
+        ###print('D', results)
+        ###print('E', tuple(_util.sequence_from_bits(i) for i in results))
+        # TODO: Consider yielding as a generator for consistency?
+        return results
+
+
+    def parallelize_child_good_combos(self, queue, distance, dotcount, lead=(), trail=()):
+        result = self.bit_combos_that_measure_with_givens(distance,
+                                                          dotcount,
+                                                          leading=lead,
+                                                          trailing=trail)
+        queue.put(tuple(result))
+
+
     # TODO: Consider if want to convert bit combos to sequence combos
     #       before returning from parallelized children?
 

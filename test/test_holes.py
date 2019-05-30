@@ -39,12 +39,15 @@ class TestHolesBitwiseNumpy(test_holes_base.TestHolesBase):
         impl_class = holes._base.implementations['bitnumpy']['_class']
         self.h = impl_class()
 
+### TODO: Change base class back and uncomment more-specific tests
+# Note: Chnage base class to unittest.TestCase to skip normal tests
+#       and just do the parallelized-specific tests.
 class TestHolesBitwiseParallel(test_holes_base.TestHolesBase):
     def setUp(self):
         impl_class = holes._base.implementations['bitparallel']['_class']
         self.h = impl_class()
 
-    def test_bit_combos_with_givens(self): 
+    def test_bit_combos_with_givens(self):
         distance = 8
         leading = (1, 0, 0)
         trailing = (1, 1)
@@ -68,14 +71,14 @@ class TestHolesBitwiseParallel(test_holes_base.TestHolesBase):
         actual = (holes._util.sequence_from_bits(ab) for ab in actual_bits)
         self.assertMatchesBestData(distance, actual, results_w_givens)
 
-    # def test_parallelize(self):
-    #     distance = 5
-    #     dotcount = 4
-    #     self.h.parallels = 4
-    #     try:
-    #         self.h.parallelize(distance, dotcount)
-    #     finally:
-    #         self.h.parallels = 2 # Default
+    def test_parallelize_good_combos(self):
+        distance = 5
+        dotcount = 4
+        self.h.parallels = 4
+        try:
+            self.h.parallelize_good_combos(distance, dotcount)
+        finally:
+            self.h.parallels = 2 # Default
 
 # Old implementations {{{
 # Filling in gaps in the old interfaces is low priority.
