@@ -44,11 +44,11 @@ class TestHolesBase(unittest.TestCase):
     # }}}
 
     # custom assertions {{{
-    def assertMatchesAllData(self, distance, dots, actual, msg=None):
+    def assertMatchesAllData(self, distance, dots, actual, desired=results):
         "Checks that actual's data matches the recorded combos"
         msg = 'Wrong data: distance {}, dots {}'.format(distance,dots)
         length = distance + 1
-        expected = (combo.sequence for combo in results[length][dots])
+        expected = (combo.sequence for combo in desired[length][dots])
 
         # Could assertCountEqual(), but its error message is unclear.
         # Could assertSetEqual(), but it might hide duplicates.
@@ -57,14 +57,14 @@ class TestHolesBase(unittest.TestCase):
     # def assertMatchesGoodData() tip?
     #[[c.sequence for c in r[l][dots] if c.measures] for dots in r[l]]
 
-    def assertMatchesBestData(self, distance, actual, msg=None):
+    def assertMatchesBestData(self, distance, actual, desired=results):
         # ToDo: Refactor commonality out of this and ...AllData?
         "Checks that actual's data matches the best recorded combos"
         msg = 'Wrong best: distance {}'.format(distance)
         length = distance + 1
         for dots in range(length + 1):
             expected = [combo.sequence
-                        for combo in results[length][dots]
+                        for combo in desired[length][dots]
                         if combo.measures]
             if len(expected) > 0:
                 break
@@ -146,4 +146,6 @@ class TestHolesBase(unittest.TestCase):
         with assertLogsDean(logger='holes', level='DEBUG'): #as strio:
             sink = tuple(self.h.best_combos(4))
         #print(strio.getvalue())
+
+    # TODO: Add tests of exception conditions.     
     # }}}

@@ -58,10 +58,8 @@ def print_combos(nested_dict):
             for combination in dotcount_list:
                 print(combination)
 
-
-# Expected result combos.
+# Expected result combos. {{{
 results = {
-    # {{{
     # First key is length (distance+1).
     # Nested inner key is dotcount.
     0: {0: (combo(0, 0, 0b0),), # Actually 0b with 0 digits, but...
@@ -133,7 +131,33 @@ results = {
             combo(5, 4, 0b11110),),
         5: (combo(5, 5, 0b11111, spans=True, measures=True),),
         },
-} # End results combos }}}
+} 
+
+# Expected result combos when a leading (1, 0, 0), and a trailing (1, 1)
+# are passed to bit_combos_with_givens.
+results_w_givens = {
+    9: {0: (),  # Because of givens, no combos generated with < 3 dots
+        1: (),
+        2: (),
+        3: (combo(9, 3, 0b100000011, spans=True),),
+        4: (combo(9, 4, 0b100000111, spans=True),
+            combo(9, 4, 0b100001011, spans=True),
+            combo(9, 4, 0b100010011, spans=True),
+            combo(9, 4, 0b100100011, spans=True),),
+        5: (combo(9, 5, 0b100001111, spans=True),
+            combo(9, 5, 0b100010111, spans=True),
+            combo(9, 5, 0b100100111, spans=True, measures=True),
+            combo(9, 5, 0b100011011, spans=True),
+            combo(9, 5, 0b100101011, spans=True),
+            combo(9, 5, 0b100110011, spans=True),),
+        6: (combo(9, 6, 0b100011111, spans=True),   # Didn't check measures
+            combo(9, 6, 0b100101111, spans=True),   # for combos with 6 & 7
+            combo(9, 6, 0b100110111, spans=True),
+            combo(9, 6, 0b100111011, spans=True),),
+        7: (combo(9, 7, 0b100111111, spans=True),),
+        },
+}
+# End results combos }}}
 
 if __name__ == '__main__':
 

@@ -42,8 +42,9 @@ from . import iterold
 # Make numpy dependency of bitnumpy optional.
 try:
     from . import bitnumpy
+    from . import bitparallel
 except ImportError as err:
-    # print('\nNote: numpy implementation unavailable:', err, '\n')
+    # print('\nNote: numpy implementations unavailable:', err, '\n')
     pass
 
 __all__ = []
